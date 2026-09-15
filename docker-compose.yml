@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: link_shortener_backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey_change_me_in_production_12345}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: link_shortener_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local

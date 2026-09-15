@@ -1,8 +1,31 @@
+# Dependencies
 node_modules/
+
+# Production build / distribution
 dist/
+build/
+
+# Environment files
 .env
-.dockerignore
-.DS_Store
+.env.local
+.env.*.local
+
+# Logs
+logs/
 *.log
-*.
-vscode/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+Thumbs.db
