@@ -1,21 +1,22 @@
 import express from "express";
-import { userRouter } from "./routes/user.route.js";
 import cors from "cors";
+import { userRouter } from "./routes/user.route.js";
 
 export const app = express();
 
-const appMiddlware = [
-  express.json(),
-  express.urlencoded({ extended: true }),
-  cors(),
-];
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.get("/health", (req, res) => {
+const healthHandler = (req, res) => {
   res.status(200).json({
     status: "ok",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
-});
+};
 
-app.use("/api", appMiddlware, userRouter);
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
+
+app.use("/api", userRouter);

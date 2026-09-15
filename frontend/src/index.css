@@ -42,6 +42,8 @@
   --color-info-foreground: var(--info-foreground);
   --color-info-subtle: var(--info-subtle);
   --color-info-subtle-foreground: var(--info-subtle-foreground);
+
+  --text-2xs: 0.65rem;
 }
 
 /* Base Body Styles - Solid Colors Only */

@@ -3,103 +3,163 @@ import { linkModel } from "../model/link.schema.js";
 import { userModel } from "../model/user.schema.js";
 import { AppError } from "../utils/global.error.js";
 
-export const registerFunction = async ({ username, fullName, password }) => {
-  if (!username || !fullName || !password) {
-    throw new AppError("all fields are required");
+export const registerFunction = async ({ username, email, fullName, password }) => {
+  if (!username || !email || !fullName || !password) {
+    throw new AppError("All fields are required", 400);
+  }
+
+  const existingUsername = await userModel.findOne({
+    username: username.toLowerCase().trim(),
+  });
+  if (existingUsername) {
+    throw new AppError("Username is already taken", 409);
+  }
+
+  const existingEmail = await userModel.findOne({
+    email: email.toLowerCase().trim(),
+  });
+  if (existingEmail) {
+    throw new AppError("Email is already registered", 409);
   }
 
   const user = await userModel.create({
-    username,
-    fullName,
+    username: username.toLowerCase().trim(),
+    email: email.toLowerCase().trim(),
+    fullName: fullName.trim(),
     password,
   });
 
   if (!user) {
-    throw new AppError("failed to create user");
+    throw new AppError("Failed to create user", 500);
   }
 
   return user;
 };
 
-export const loginFunction = async ({ username, password }) => {
-  if (!username || !password) {
-    throw new AppError("all fields are required");
+export const loginFunction = async ({ identifier, username, email, password }) => {
+  const loginKey = (identifier || email || username || "").toLowerCase().trim();
+  if (!loginKey || !password) {
+    throw new AppError("Email/username and password are required", 400);
   }
 
-  const user = await userModel.findOne({ username });
+  const user = await userModel.findOne({
+    $or: [{ email: loginKey }, { username: loginKey }],
+  });
 
   if (!user) {
-    throw new AppError("User not found");
+    throw new AppError("Invalid credentials", 401);
   }
 
   const isPasswordMatch = await user.comparePassword(password);
   if (!isPasswordMatch) {
-    throw new AppError("Invalid password");
+    throw new AppError("Invalid credentials", 401);
   }
 
-  const token = await user.generateToken();
+  const token = user.generateToken();
   return { token, user };
 };
 
 export const validateUrl = async ({ url, token }) => {
-  if (!url || !token) {
-    throw new AppError("all fields are required");
+  if (!url) {
+    throw new AppError("Destination URL is required", 400);
   }
 
-  const dummy = new userModel();
-  const decodedToken = await dummy.jwtVerify(token);
-
-  if (!decodedToken) {
-    throw new AppError("Invalid token");
+  let validUrl = url.trim();
+  if (!/^https?:\/\//i.test(validUrl)) {
+    validUrl = `https://${validUrl}`;
   }
 
-  const Url = await linkModel.create({
-    originalUrl: url,
-    owner: decodedToken.userId,
+  try {
+    new URL(validUrl);
+  } catch {
+    throw new AppError("Please provide a valid destination URL", 400);
+  }
+
+  let ownerId = null;
+  if (token) {
+    try {
+      const dummy = new userModel();
+      const decodedToken = await dummy.jwtVerify(token);
+      if (decodedToken?.userId) {
+        ownerId = decodedToken.userId;
+      }
+    } catch {
+      throw new AppError("Invalid or expired session token", 401);
+    }
+  }
+
+  if (!ownerId) {
+    throw new AppError("Authentication required to create and track short links", 401);
+  }
+
+  const shortLink = await linkModel.create({
+    originalUrl: validUrl,
+    owner: ownerId,
     redirectKey: nanoid(7),
   });
 
-  if (!Url) {
-    throw new AppError("failed to create url");
+  if (!shortLink) {
+    throw new AppError("Failed to create short link", 500);
   }
 
-  return Url;
+  return shortLink;
 };
 
 export const redirectFunction = async ({ redirectKey }) => {
   if (!redirectKey) {
-    throw new AppError("Redirect key is required");
+    throw new AppError("Redirect key is required", 400);
   }
 
-  const Url = await linkModel.findOneAndUpdate(
-    { redirectKey }, // query
-    { $inc: { clicks: 1 } }, // update: increment 'clicks' by 1
-    { new: true } // return the updated document
+  const link = await linkModel.findOneAndUpdate(
+    { redirectKey },
+    { $inc: { clicks: 1 } },
+    { new: true }
   );
 
-  if (!Url) {
-    throw new AppError("Invalid redirect key");
+  if (!link) {
+    throw new AppError("Short link not found", 404);
   }
 
-  return Url.originalUrl;
+  return link.originalUrl;
 };
 
-// userFunction.js
 export const userFunction = async ({ token }) => {
   if (!token) {
-    throw new AppError("Token is required");
+    throw new AppError("Token is required", 401);
   }
 
   const dummy = new userModel();
   const decodedToken = await dummy.jwtVerify(token);
-  if (!decodedToken) {
-    throw new AppError("Invalid token");
+  if (!decodedToken || !decodedToken.userId) {
+    throw new AppError("Invalid or expired token", 401);
   }
 
-  const Links = await linkModel.find({ owner: decodedToken.userId });
+  const links = await linkModel
+    .find({ owner: decodedToken.userId })
+    .sort({ createdAt: -1 });
 
-  if (!Links) {
-    throw new AppError("No links found for the user");
+  return links || [];
+};
+
+export const deleteLinkFunction = async ({ redirectKey, token }) => {
+  if (!redirectKey || !token) {
+    throw new AppError("Link identifier and token are required", 400);
   }
-  return Links;
+
+  const dummy = new userModel();
+  const decodedToken = await dummy.jwtVerify(token);
+  if (!decodedToken || !decodedToken.userId) {
+    throw new AppError("Invalid or expired token", 401);
+  }
+
+  const deleted = await linkModel.findOneAndDelete({
+    redirectKey,
+    owner: decodedToken.userId,
+  });
+
+  if (!deleted) {
+    throw new AppError("Link not found or unauthorized to delete", 404);
+  }
+
+  return deleted;
 };

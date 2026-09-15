@@ -10,6 +10,13 @@ const userSchema = new Schema({
     trim: true,
     lowercase: true,
   },
+  email: {
+    type: String,
+    unique: true,
+    required: true,
+    trim: true,
+    lowercase: true,
+  },
   fullName: {
     type: String,
     required: true,
@@ -39,7 +46,7 @@ userSchema.methods.comparePassword = function (candidatePassword) {
 
 userSchema.methods.generateToken = function () {
   return jwt.sign({ userId: this._id }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+    expiresIn: "7d",
   });
 };
 
@@ -47,7 +54,7 @@ userSchema.methods.jwtVerify = async function (token) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return decoded;
-  } catch (err) {
+  } catch {
     throw new Error("Invalid token");
   }
 };

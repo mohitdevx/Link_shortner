@@ -1,0 +1,312 @@
+import { useState } from "react";
+import { Button } from "../atoms/Button.jsx";
+import { CopyButton } from "../molecules/CopyButton.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { useToast } from "../../context/ToastContext.jsx";
+
+export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
+  const { isAuthenticated, token } = useAuth();
+  const toast = useToast();
+
+  const [inputUrl, setInputUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState(null);
+
+  const handleClear = () => {
+    setInputUrl("");
+    setUrlError("");
+  };
+
+  const handleShorten = async (e) => {
+    e.preventDefault();
+    if (!inputUrl.trim()) {
+      setUrlError("Please enter a destination URL");
+      return;
+    }
+
+    setUrlError("");
+    setLoading(true);
+
+    if (isAuthenticated) {
+      try {
+        const response = await fetch("/api/v1/newurl", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ url: inputUrl.trim() }),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+          setGeneratedLink({
+            shortUrl: data.url,
+            originalUrl: data.originalUrl || inputUrl.trim(),
+            isSaved: true,
+          });
+          toast.success("Short link generated!");
+          setInputUrl("");
+        } else {
+          toast.error(data.message || "Failed to create short link");
+          setUrlError(data.message || "Failed to create link");
+        }
+      } catch {
+        toast.error("Network error. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Instant demo preview for guest
+      setTimeout(() => {
+        const demoCode = Math.random().toString(36).substring(2, 8);
+        const origin = window.location.origin;
+        setGeneratedLink({
+          shortUrl: `${origin}/api/v1/${demoCode}`,
+          originalUrl: inputUrl.trim(),
+          isSaved: false,
+        });
+        toast.success("Demo link generated! Sign up to save and track clicks.");
+        setLoading(false);
+      }, 300);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto px-6 py-16 sm:py-24 space-y-24">
+      {/* 1. Hero Section */}
+      <section className="text-center space-y-8 max-w-3xl mx-auto">
+        <div className="space-y-4">
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-foreground leading-[1.1]">
+            Short links with superpowers.
+          </h1>
+
+          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+            Transform long, cluttered URLs into crisp, lightning-fast redirects.
+            Real-time analytics, instant sharing, zero clutter.
+          </p>
+        </div>
+
+        {/* Aesthetic & Professional Hero Shortener Bar */}
+        <div className="w-full max-w-3xl mx-auto space-y-3">
+          <form
+            onSubmit={handleShorten}
+            className="group relative rounded-lg border-0 bg-card p-2 sm:p-2.5 flex flex-col sm:flex-row items-center gap-2.5 shadow-lg hover:shadow-xl focus-within:shadow-xl focus-within:ring-2 focus-within:ring-primary/25 transition-all duration-200"
+          >
+            {/* Left Protocol / Icon Group */}
+            <div className="flex items-center gap-3 w-full pl-3 pr-2">
+              <i className="ri-link text-muted-foreground text-lg shrink-0" />
+              <span className="text-xs text-muted-foreground/60 select-none font-mono hidden sm:inline-block">
+                https://
+              </span>
+
+              {/* Input Field */}
+              <input
+                id="hero-url-input"
+                type="text"
+                placeholder="example.com/very/long/destination/url"
+                value={inputUrl}
+                onChange={(e) => {
+                  setInputUrl(e.target.value);
+                  if (urlError) setUrlError("");
+                }}
+                className="w-full bg-transparent border-none text-foreground placeholder:text-muted-foreground/40 text-sm sm:text-base outline-none focus:outline-none tracking-normal font-sans"
+                autoComplete="off"
+                spellCheck="false"
+              />
+
+              {/* Clear Action when text exists */}
+              {inputUrl && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="p-1 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer shrink-0"
+                  title="Clear input"
+                >
+                  <i className="ri-close-line text-base leading-none" />
+                </button>
+              )}
+            </div>
+
+            {/* Submit Action Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full sm:w-auto shrink-0 rounded-md px-6 h-10 font-medium text-sm bg-primary text-primary-foreground hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              {loading ? (
+                <>
+                  <i className="ri-loader-4-line animate-spin text-sm" />
+                  <span>Processing</span>
+                </>
+              ) : (
+                <>
+                  <span>Shorten</span>
+                  <i className="ri-arrow-right-line text-sm leading-none" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Validation Error */}
+          {urlError && (
+            <div className="flex items-center gap-1.5 text-xs text-error pl-3 animate-in fade-in">
+              <i className="ri-error-warning-fill text-sm" />
+              <span>{urlError}</span>
+            </div>
+          )}
+
+          {/* Aesthetic Result Card */}
+          {generatedLink && (
+            <div className="rounded-lg border-0 bg-card p-4 sm:p-5 text-left shadow-lg space-y-3.5 transition-all animate-in fade-in slide-in-from-top-1">
+              {/* Header: Status and Metadata */}
+              <div className="flex items-center justify-between text-2xs text-muted-foreground border-b border-border/40 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 text-success font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                    Live Redirect
+                  </span>
+                  <span>•</span>
+                  <span>HTTP 302</span>
+                </div>
+                <span className="uppercase tracking-wider font-mono text-2xs px-2 py-0.5 rounded bg-secondary text-secondary-foreground font-medium">
+                  {generatedLink.isSaved ? "Saved" : "Guest Preview"}
+                </span>
+              </div>
+
+              {/* Main Link Display & Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={generatedLink.shortUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-sm font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
+                    >
+                      {generatedLink.shortUrl}
+                      <i className="ri-arrow-right-up-line text-xs opacity-60" />
+                    </a>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate max-w-lg font-mono" title={generatedLink.originalUrl}>
+                    ↳ {generatedLink.originalUrl}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <CopyButton text={generatedLink.shortUrl} />
+                  {generatedLink.isSaved ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onGoToDashboard}
+                      icon="ri-dashboard-line"
+                    >
+                      Dashboard
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => onOpenAuth("signup")}
+                      icon="ri-save-line"
+                    >
+                      Save Link
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Guest Upgrade Hint */}
+              {!generatedLink.isSaved && (
+                <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Want to track clicks and view analytics?</span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAuth("signup")}
+                    className="font-medium text-foreground hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Create free account</span>
+                    <i className="ri-arrow-right-s-line text-sm" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 2. Three Editorial Pillars */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-border/40">
+        <div className="space-y-2">
+          <div className="w-8 h-8 rounded-md bg-secondary text-foreground flex items-center justify-center text-sm font-semibold">
+            01
+          </div>
+          <h2 className="text-base font-semibold text-foreground">
+            Sub-millisecond 302 redirects
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Direct server routing without intermediate interstitial screens, countdowns, or annoying advertiser delays.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="w-8 h-8 rounded-md bg-secondary text-foreground flex items-center justify-center text-sm font-semibold">
+            02
+          </div>
+          <h2 className="text-base font-semibold text-foreground">
+            Live click tracking
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Monitor real-time visitor counts the moment a link is opened. Clean metrics without invasive surveillance.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="w-8 h-8 rounded-md bg-secondary text-foreground flex items-center justify-center text-sm font-semibold">
+            03
+          </div>
+          <h2 className="text-base font-semibold text-foreground">
+            Complete link control
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Manage your personal portfolio of links, instantly copy clean URLs to clipboard, or revoke routes at any time.
+          </p>
+        </div>
+      </section>
+
+      {/* 3. Understated Minimal CTA */}
+      <section className="text-center py-10 space-y-4 border-t border-border/40">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">
+          Ready to clean up your links?
+        </h2>
+        <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
+          Create an account in seconds to manage, track, and share high-converting URLs.
+        </p>
+        <div className="pt-2">
+          {isAuthenticated ? (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={onGoToDashboard}
+              icon="ri-dashboard-line"
+            >
+              Go to Your Dashboard
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => onOpenAuth("signup")}
+              icon="ri-arrow-right-line"
+              iconRight
+            >
+              Get Started Free
+            </Button>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+};

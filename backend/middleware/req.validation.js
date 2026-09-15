@@ -10,6 +10,14 @@ export const registerValidator = [
     .matches(/^[a-zA-Z0-9_]+$/)
     .withMessage("Username can only contain letters, numbers, and underscores"),
 
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please enter a valid email address")
+    .normalizeEmail(),
+
   body("fullName")
     .trim()
     .notEmpty()
@@ -25,14 +33,14 @@ export const registerValidator = [
 ];
 
 export const loginValidator = [
-  body("username")
-    .trim()
-    .notEmpty()
-    .withMessage("Username is required")
-    .isLength({ min: 3, max: 20 })
-    .withMessage("Username must be 3-20 characters")
-    .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage("Username can only contain letters, numbers, and underscores"),
+  body().custom((_, { req }) => {
+    const identifier =
+      req.body.email || req.body.username || req.body.identifier;
+    if (!identifier || !identifier.trim()) {
+      throw new Error("Email or username is required");
+    }
+    return true;
+  }),
 
   body("password")
     .notEmpty()
@@ -42,7 +50,5 @@ export const loginValidator = [
 ];
 
 export const urlValidator = [
-  body("url").notEmpty().withMessage("url is required"),
-
-  body("token").notEmpty().withMessage("token is required"),
+  body("url").trim().notEmpty().withMessage("Valid destination URL is required"),
 ];

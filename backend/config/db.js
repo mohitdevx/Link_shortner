@@ -1,13 +1,25 @@
 import { connect } from "mongoose";
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 export const connectionDB = async () => {
   try {
-    const rawUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017";
-    const uri = rawUri.endsWith("/LinkShortener")
-      ? rawUri
-      : `${rawUri.replace(/\/+$/, "")}/LinkShortener`;
+    let uri =
+      process.env.MONGO_URI ||
+      "mongodb://root:example@127.0.0.1:27017/LinkShortener?authSource=admin";
+
+    // If no database name specified, insert /LinkShortener before query parameters or at end
+    if (!uri.includes("/LinkShortener") && !uri.includes("/linkshortener")) {
+      if (uri.includes("?")) {
+        uri = uri.replace("?", "/LinkShortener?");
+      } else {
+        uri = `${uri.replace(/\/+$/, "")}/LinkShortener`;
+      }
+    }
 
     const connectionInstance = await connect(uri);
     console.log(
