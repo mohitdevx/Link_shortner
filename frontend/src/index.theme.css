@@ -1,0 +1,111 @@
+/* ==========================================================================
+   CONCRETE COLOR SCHEME (LIGHT & DARK) - SOLID COLORS ONLY
+   No gradients, no glows, no lighting effects.
+   All application colors MUST reference these CSS variables.
+   ========================================================================== */
+
+:root {
+  /* Surface & Base */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Primary Brand (Solid) */
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --primary-hover: #1d4ed8;
+
+  /* Secondary & Neutral */
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+  --secondary-hover: #cbd5e1;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #e0e7ff;
+  --accent-foreground: #1e1b4b;
+
+  /* Borders & Dividers */
+  --border: #cbd5e1;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+
+  /* Semantic Status: Success */
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --success-subtle: #dcfce7;
+  --success-subtle-foreground: #14532d;
+
+  /* Semantic Status: Error / Destructive */
+  --error: #dc2626;
+  --error-foreground: #ffffff;
+  --error-subtle: #fee2e2;
+  --error-subtle-foreground: #7f1d1d;
+
+  /* Semantic Status: Warning */
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --warning-subtle: #fef3c7;
+  --warning-subtle-foreground: #78350f;
+
+  /* Semantic Status: Info */
+  --info: #0284c7;
+  --info-foreground: #ffffff;
+  --info-subtle: #e0f2fe;
+  --info-subtle-foreground: #0c4a6e;
+}
+
+.dark {
+  /* Surface & Base */
+  --background: #090d16;
+  --foreground: #f8fafc;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --popover: #111827;
+  --popover-foreground: #f8fafc;
+
+  /* Primary Brand (Solid) */
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --primary-hover: #2563eb;
+
+  /* Secondary & Neutral */
+  --secondary: #1f2937;
+  --secondary-foreground: #f8fafc;
+  --secondary-hover: #374151;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e1b4b;
+  --accent-foreground: #e0e7ff;
+
+  /* Borders & Dividers */
+  --border: #334155;
+  --input: #1f2937;
+  --ring: #3b82f6;
+
+  /* Semantic Status: Success */
+  --success: #22c55e;
+  --success-foreground: #052e16;
+  --success-subtle: #052e16;
+  --success-subtle-foreground: #86efac;
+
+  /* Semantic Status: Error / Destructive */
+  --error: #ef4444;
+  --error-foreground: #450a0a;
+  --error-subtle: #450a0a;
+  --error-subtle-foreground: #fca5a5;
+
+  /* Semantic Status: Warning */
+  --warning: #f59e0b;
+  --warning-foreground: #451a03;
+  --warning-subtle: #451a03;
+  --warning-subtle-foreground: #fcd34d;
+
+  /* Semantic Status: Info */
+  --info: #38bdf8;
+  --info-foreground: #082f49;
+  --info-subtle: #082f49;
+  --info-subtle-foreground: #7dd3fc;
+}
