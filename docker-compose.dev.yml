@@ -1,49 +1,50 @@
 services:
   backend:
-    build:
+    build: 
       context: ./backend
       dockerfile: Dockerfile
-      target: builder
-    container_name: link_shortener_backend_dev
-    command: npm run dev
+    container_name: link_shortener_backend
     restart: unless-stopped
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     ports:
-      - "${PORT:-5000}:5000"
-    environment:
-      - PORT=5000
-      - MONGO_URI=mongodb://mongodb:27017
-      - NODE_ENV=development
-      - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey_change_me_in_production_12345}
+      - "5000:5000"
+    env_file:
+      - .env
     depends_on:
-      mongodb:
-        condition: service_healthy
+        mongo_db:
+          condition: service_healthy
     networks:
-      - app_network
-
-  mongodb:
+      - linked_network
+  
+  mongo_db:
     image: mongo:7.0
-    container_name: link_shortener_mongodb_dev
-    restart: unless-stopped
+    container_name: link_shortener_mongodb
+    volumes:
+      - mongo_data:/data/db
     ports:
       - "27017:27017"
-    volumes:
-      - mongo_data_dev:/data/db
-    networks:
-      - app_network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
+      interval: 1m30s
+      timeout: 30s
       retries: 5
-      start_period: 10s
+      start_period: 30s
+    networks:
+      - linked_network
 
-networks:
-  app_network:
-    driver: bridge
+  redis:
+    image: redis:latest
+    container_name: link_shortener_redis
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+    networks:
+      - linked_network
 
 volumes:
-  mongo_data_dev:
+  mongo_data:
     driver: local
+
+networks:
+  linked_network:
+    driver: bridge

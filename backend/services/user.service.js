@@ -84,12 +84,9 @@ export const validateUrl = async ({ url, token }) => {
         ownerId = decodedToken.userId;
       }
     } catch {
-      throw new AppError("Invalid or expired session token", 401);
+      // If token is invalid or expired, continue as guest creation
+      ownerId = null;
     }
-  }
-
-  if (!ownerId) {
-    throw new AppError("Authentication required to create and track short links", 401);
   }
 
   const shortLink = await linkModel.create({
@@ -103,6 +100,26 @@ export const validateUrl = async ({ url, token }) => {
   }
 
   return shortLink;
+};
+
+export const claimGuestLink = async ({ redirectKey, token }) => {
+  if (!redirectKey || !token) {
+    throw new AppError("Redirect key and token required", 400);
+  }
+
+  const dummy = new userModel();
+  const decodedToken = await dummy.jwtVerify(token);
+  if (!decodedToken?.userId) {
+    throw new AppError("Invalid or expired session token", 401);
+  }
+
+  const link = await linkModel.findOneAndUpdate(
+    { redirectKey, owner: null },
+    { owner: decodedToken.userId },
+    { new: true }
+  );
+
+  return link;
 };
 
 export const redirectFunction = async ({ redirectKey }) => {

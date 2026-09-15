@@ -15,7 +15,8 @@ const linkSchema = new Schema({
   owner: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+    required: false,
+    default: null,
   },
   clicks: {
     type: Number,

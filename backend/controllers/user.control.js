@@ -3,6 +3,7 @@ import {
   registerFunction,
   loginFunction,
   validateUrl,
+  claimGuestLink,
   redirectFunction,
   userFunction,
   deleteLinkFunction,
@@ -167,12 +168,53 @@ export const urlValidation = async (req, res) => {
       redirectKey: shortLink.redirectKey,
       originalUrl: shortLink.originalUrl,
       clicks: shortLink.clicks,
+      isSaved: Boolean(shortLink.owner),
       createdAt: shortLink.createdAt,
     });
   } catch (err) {
     return res.status(err.statusCode || 400).json({
       message: err.message,
       success: false,
+    });
+  }
+};
+
+export const claimUrlController = async (req, res) => {
+  const token = extractToken(req);
+  const { redirectKey } = req.body;
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required to claim link",
+    });
+  }
+
+  if (!redirectKey) {
+    return res.status(400).json({
+      success: false,
+      message: "Redirect key is required",
+    });
+  }
+
+  try {
+    const claimed = await claimGuestLink({ redirectKey, token });
+    if (!claimed) {
+      return res.status(404).json({
+        success: false,
+        message: "Link not found or already claimed",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Link claimed and added to your account successfully",
+      link: claimed,
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 400).json({
+      success: false,
+      message: err.message,
     });
   }
 };

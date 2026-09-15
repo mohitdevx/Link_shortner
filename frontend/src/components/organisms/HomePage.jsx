@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../atoms/Button.jsx";
 import { CopyButton } from "../molecules/CopyButton.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -12,6 +12,37 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
   const [urlError, setUrlError] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState(null);
+
+  // Auto-claim guest link if user logs in / signs up while viewing it
+  useEffect(() => {
+    const claimLinkIfGuest = async () => {
+      if (
+        isAuthenticated &&
+        token &&
+        generatedLink?.redirectKey &&
+        !generatedLink.isSaved
+      ) {
+        try {
+          const res = await fetch("/api/v1/claim", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ redirectKey: generatedLink.redirectKey }),
+          });
+          if (res.ok) {
+            setGeneratedLink((prev) => (prev ? { ...prev, isSaved: true } : null));
+            toast.success("Guest link saved to your account!");
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    claimLinkIfGuest();
+  }, [isAuthenticated, token, generatedLink?.redirectKey]);
 
   const handleClear = () => {
     setInputUrl("");
@@ -28,48 +59,43 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
     setUrlError("");
     setLoading(true);
 
-    if (isAuthenticated) {
-      try {
-        const response = await fetch("/api/v1/newurl", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ url: inputUrl.trim() }),
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          setGeneratedLink({
-            shortUrl: data.url,
-            originalUrl: data.originalUrl || inputUrl.trim(),
-            isSaved: true,
-          });
-          toast.success("Short link generated!");
-          setInputUrl("");
-        } else {
-          toast.error(data.message || "Failed to create short link");
-          setUrlError(data.message || "Failed to create link");
-        }
-      } catch {
-        toast.error("Network error. Please try again.");
-      } finally {
-        setLoading(false);
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
       }
-    } else {
-      // Instant demo preview for guest
-      setTimeout(() => {
-        const demoCode = Math.random().toString(36).substring(2, 8);
+
+      const response = await fetch("/api/v1/newurl", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ url: inputUrl.trim() }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
         const origin = window.location.origin;
         setGeneratedLink({
-          shortUrl: `${origin}/api/v1/${demoCode}`,
-          originalUrl: inputUrl.trim(),
-          isSaved: false,
+          shortUrl: `${origin}/api/v1/${data.redirectKey}`,
+          redirectKey: data.redirectKey,
+          originalUrl: data.originalUrl || inputUrl.trim(),
+          isSaved: Boolean(data.isSaved || isAuthenticated),
         });
-        toast.success("Demo link generated! Sign up to save and track clicks.");
-        setLoading(false);
-      }, 300);
+        toast.success(
+          data.isSaved || isAuthenticated
+            ? "Short link generated and saved!"
+            : "Short link generated! Redirect is live."
+        );
+        setInputUrl("");
+      } else {
+        toast.error(data.message || "Failed to create short link");
+        setUrlError(data.message || "Failed to create link");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,38 +185,39 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
 
           {/* Aesthetic Result Card */}
           {generatedLink && (
-            <div className="rounded-lg border-0 bg-card p-4 sm:p-5 text-left shadow-lg space-y-3.5 transition-all animate-in fade-in slide-in-from-top-1">
-              {/* Header: Status and Metadata */}
-              <div className="flex items-center justify-between text-2xs text-muted-foreground border-b border-border/40 pb-2">
+            <div className="rounded-lg border-0 bg-card p-5 text-left shadow-lg space-y-4 transition-all animate-in fade-in slide-in-from-top-1">
+              {/* Clean Header: Status and Badge */}
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 text-success font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                    Live Redirect
+                  <i className="ri-check-line text-sm text-foreground/70" />
+                  <span className="text-xs font-semibold text-foreground tracking-tight">
+                    Link ready
                   </span>
-                  <span>•</span>
-                  <span>HTTP 302</span>
                 </div>
-                <span className="uppercase tracking-wider font-mono text-2xs px-2 py-0.5 rounded bg-secondary text-secondary-foreground font-medium">
-                  {generatedLink.isSaved ? "Saved" : "Guest Preview"}
+                <span className="text-2xs font-medium px-2.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+                  {generatedLink.isSaved ? "Saved to Dashboard" : "Guest Link"}
                 </span>
               </div>
 
               {/* Main Link Display & Actions */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <a
                       href={generatedLink.shortUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-mono text-sm font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
+                      className="font-mono text-base font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group"
                     >
-                      {generatedLink.shortUrl}
-                      <i className="ri-arrow-right-up-line text-xs opacity-60" />
+                      <span>{generatedLink.shortUrl}</span>
+                      <i className="ri-arrow-right-up-line text-sm text-muted-foreground group-hover:text-primary transition-colors" />
                     </a>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate max-w-lg font-mono" title={generatedLink.originalUrl}>
-                    ↳ {generatedLink.originalUrl}
+                  <p
+                    className="text-xs text-muted-foreground truncate max-w-lg font-sans"
+                    title={generatedLink.originalUrl}
+                  >
+                    {generatedLink.originalUrl}
                   </p>
                 </div>
 
@@ -210,24 +237,24 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
                       variant="primary"
                       size="sm"
                       onClick={() => onOpenAuth("signup")}
-                      icon="ri-save-line"
+                      icon="ri-user-add-line"
                     >
-                      Save Link
+                      Sign Up to Save
                     </Button>
                   )}
                 </div>
               </div>
 
-              {/* Guest Upgrade Hint */}
+              {/* Guest Footer Hint */}
               {!generatedLink.isSaved && (
-                <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Want to track clicks and view analytics?</span>
+                <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Guest link is live and active. Create a free account to track clicks & analytics.</span>
                   <button
                     type="button"
                     onClick={() => onOpenAuth("signup")}
-                    className="font-medium text-foreground hover:underline cursor-pointer flex items-center gap-1"
+                    className="font-medium text-foreground hover:underline cursor-pointer flex items-center gap-1 border-0 bg-transparent shrink-0 ml-3"
                   >
-                    <span>Create free account</span>
+                    <span>Sign up</span>
                     <i className="ri-arrow-right-s-line text-sm" />
                   </button>
                 </div>
