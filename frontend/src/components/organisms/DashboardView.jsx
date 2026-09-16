@@ -8,7 +8,7 @@ import { useToast } from "../../context/ToastContext.jsx";
 
 const PAGE_LIMIT = 8;
 
-export const DashboardView = () => {
+export const DashboardView = ({ onInspect }) => {
   const { token, user } = useAuth();
   const toast = useToast();
   const toastRef = useRef(toast);
@@ -348,6 +348,15 @@ export const DashboardView = () => {
                     {/* Actions */}
                     <td className="py-3 px-2 text-right whitespace-nowrap">
                       <div className="inline-flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onInspect?.(link.redirectKey)}
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                          title="Inspect & analyse link"
+                        >
+                          <i className="ri-search-eye-line text-sm leading-none" />
+                        </button>
+
                         <CopyButton text={link.shortUrl} title="Copy short link" />
 
                         <button

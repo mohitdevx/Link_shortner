@@ -20,9 +20,11 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.1",
-    "nanoid": "^5.1.5"
+    "nanoid": "^5.1.5",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "prettier": "^3.9.6"

@@ -34,10 +34,10 @@ export const CopyButton = ({
     <button
       type="button"
       onClick={handleCopy}
-      className={`inline-flex items-center justify-center transition-all duration-150 cursor-pointer select-none ${
+      className={`inline-flex items-center justify-center transition-all duration-150 cursor-pointer select-none bg-transparent ${
         isIconOnly
           ? "w-7 h-7 rounded-md"
-          : "gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border/40 bg-card hover:bg-muted"
+          : "gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border/40"
       } ${
         copied
           ? "text-emerald-500 bg-emerald-500/15 border-emerald-500/30"

@@ -7,6 +7,8 @@ import {
   redirectFunction,
   userFunction,
   deleteLinkFunction,
+  inspectLinkFunction,
+  getLinkClicksFunction,
 } from "../services/user.service.js";
 import { userModel } from "../model/user.schema.js";
 
@@ -305,3 +307,57 @@ export const deleteUrlController = async (req, res) => {
     });
   }
 };
+
+export const inspectLinkController = async (req, res) => {
+  const { redirectKey } = req.params;
+  const token = extractToken(req);
+
+  if (!redirectKey) {
+    return res.status(400).json({
+      success: false,
+      message: "Redirect key is required",
+    });
+  }
+
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const data = await inspectLinkFunction({ redirectKey, token, baseUrl });
+
+    return res.status(200).json({
+      success: true,
+      message: "Link inspection data retrieved",
+      data,
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+export const getLinkClicksController = async (req, res) => {
+  const { redirectKey } = req.params;
+
+  if (!redirectKey) {
+    return res.status(400).json({
+      success: false,
+      message: "Redirect key is required",
+    });
+  }
+
+  try {
+    const data = await getLinkClicksFunction({ redirectKey });
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+

@@ -4,7 +4,7 @@ import { CopyButton } from "../molecules/CopyButton.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 
-export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
+export const HomePage = ({ onOpenAuth, onGoToDashboard, onInspect }) => {
   const { isAuthenticated, token } = useAuth();
   const toast = useToast();
 
@@ -223,6 +223,14 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <CopyButton text={generatedLink.shortUrl} label="Copy" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onInspect?.(generatedLink.redirectKey)}
+                    icon="ri-search-eye-line"
+                  >
+                    Inspect
+                  </Button>
                   {generatedLink.isSaved ? (
                     <Button
                       variant="outline"

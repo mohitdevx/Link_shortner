@@ -1,17 +1,45 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthModal } from "./components/organisms/AuthModal.jsx";
 import { DashboardView } from "./components/organisms/DashboardView.jsx";
 import { HomePage } from "./components/organisms/HomePage.jsx";
+import { InspectLinkView } from "./components/organisms/InspectLinkView.jsx";
 import { Navbar } from "./components/organisms/Navbar.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
+const parseRouteFromLocation = () => {
+  const path = window.location.pathname;
+  const match = path.match(/^\/inspect\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return { view: "inspect", key: match[1] };
+  }
+  if (path === "/dashboard") {
+    return { view: "dashboard", key: null };
+  }
+  return { view: "home", key: null };
+};
+
 export default function App() {
   const { isAuthenticated } = useAuth();
-  const [activeView, setActiveView] = useState("home");
+  const initialRoute = parseRouteFromLocation();
+  const [activeView, setActiveView] = useState(initialRoute.view);
+  const [inspectKey, setInspectKey] = useState(initialRoute.key);
+
   const [authModalState, setAuthModalState] = useState({
     isOpen: false,
     mode: "login",
   });
+
+  // Synchronize browser history (popstate events)
+  useEffect(() => {
+    const handlePopState = () => {
+      const route = parseRouteFromLocation();
+      setActiveView(route.view);
+      setInspectKey(route.key);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleOpenAuth = (mode = "login") => {
     setAuthModalState({ isOpen: true, mode });
@@ -21,12 +49,25 @@ export default function App() {
     setAuthModalState((prev) => ({ ...prev, isOpen: false }));
   };
 
+  const handleInspectLink = (key) => {
+    if (!key) return;
+    setInspectKey(key);
+    setActiveView("inspect");
+    window.history.pushState({ view: "inspect", key }, "", `/inspect/${key}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleViewChange = (view) => {
     if (view === "dashboard" && !isAuthenticated) {
       handleOpenAuth("login");
       return;
     }
+
+    setInspectKey(null);
     setActiveView(view);
+    const targetPath = view === "dashboard" ? "/dashboard" : "/";
+    window.history.pushState({ view }, "", targetPath);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -43,10 +84,17 @@ export default function App() {
         {activeView === "home" ? (
           <HomePage
             onOpenAuth={handleOpenAuth}
-            onGoToDashboard={() => setActiveView("dashboard")}
+            onGoToDashboard={() => handleViewChange("dashboard")}
+            onInspect={handleInspectLink}
+          />
+        ) : activeView === "inspect" ? (
+          <InspectLinkView
+            redirectKey={inspectKey}
+            onBack={() => handleViewChange(isAuthenticated ? "dashboard" : "home")}
+            onOpenAuth={handleOpenAuth}
           />
         ) : (
-          <DashboardView />
+          <DashboardView onInspect={handleInspectLink} />
         )}
       </main>
 

@@ -13,6 +13,8 @@ import {
   getCurrentUser,
   deleteUrlController,
   claimUrlController,
+  inspectLinkController,
+  getLinkClicksController,
 } from "../controllers/user.control.js";
 
 export const userRouter = Router();
@@ -26,6 +28,9 @@ userRouter.get("/profile", getProfile);
 // Link routes
 userRouter.post("/v1/newurl", urlValidator, urlValidation);
 userRouter.post("/v1/claim", claimUrlController);
+userRouter.get("/v1/inspect/:redirectKey", inspectLinkController);
+userRouter.get("/v1/clicks/:redirectKey", getLinkClicksController);
 userRouter.get("/v1/:redirectKey", redirectUrlController);
 userRouter.delete("/v1/:redirectKey", deleteUrlController);
 userRouter.get("/:redirectKey", redirectUrlController);
+
