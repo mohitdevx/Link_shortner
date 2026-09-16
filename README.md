@@ -1,6 +1,49 @@
-# Link Shortener (Full-Stack Architecture)
+# ShortLink Engine
 
-A URL Shortener application organized into `backend` and `frontend` workspaces, containerized with Docker and Docker Compose.
+A high-performance, minimalist, privacy-first URL shortening and link management platform. Built with a full-stack architecture combining a reactive React frontend with a high-throughput Express, MongoDB, and Redis backend.
+
+---
+
+## 🌟 Key Highlights & Features
+
+- **Ultra-Fast Redirections & Redis Caching**:
+  - In-memory route resolution via Redis for sub-millisecond 302 redirects.
+  - Automatic cache-aside pattern: links are cached on first hit with a 24-hour TTL and invalidated automatically on link updates or deletions.
+  - Atomic Redis counters (`INCR`) for click tracking without database bottlenecks.
+
+- **Real-Time Click Synchronization**:
+  - Live metric synchronization refreshing link click counts every 5 seconds.
+  - Dedicated lightweight polling avoids expensive database queries while keeping dashboard and analytics displays accurate.
+
+- **Deep Link Inspection & Security Analysis**:
+  - Built-in link analyzer dissecting destination hostnames, protocols (HTTP vs. HTTPS encryption), path components, and query parameter counts.
+  - Dynamically generated SVG/PNG QR codes for every shortened link with one-click download.
+
+- **Guest Links & Smooth Onboarding**:
+  - Instant URL shortening for anonymous/guest users without requiring immediate sign-up.
+  - Seamless account claiming: guest links created in a session can be claimed and saved permanently to a user's dashboard upon registration or login.
+
+- **Personal Account Management**:
+  - User profile settings to update username handles, contact email addresses, and full names.
+  - Secure credential management supporting password updates with existing password verification and bcrypt hashing.
+
+- **Restrained & Accessible User Interface**:
+  - Clean typography and distraction-free design with native Dark and Light themes.
+  - Custom non-intrusive toast notifications and accessible modal confirmations for destructive actions (link deletion, sign out).
+  - Paginated link overview with offset controls and search filtering.
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Tailwind CSS, Remixicon |
+| **Backend API** | Node.js, Express, Express-Validator |
+| **Primary Database** | MongoDB & Mongoose (data persistence & relations) |
+| **In-Memory Cache** | Redis & ioredis (sub-millisecond redirects & atomic counters) |
+| **Authentication** | JSON Web Tokens (JWT) & bcrypt |
+| **DevOps & Containers** | Docker, Docker Compose (multi-stage builds) |
 
 ---
 
@@ -10,106 +53,100 @@ A URL Shortener application organized into `backend` and `frontend` workspaces, 
 .
 ├── backend/
 │   ├── config/
-│   │   └── db.js                 # MongoDB connection logic
+│   │   ├── db.js                 # MongoDB connection logic
+│   │   └── redis.js              # Redis client connection & caching helpers
 │   ├── controllers/
-│   │   └── user.control.js       # Request controllers
+│   │   └── user.control.js       # Core business logic & request handling
 │   ├── middleware/
 │   │   ├── error.handeler.js     # Global error handling middleware
-│   │   └── req.validation.js     # Input validation rules
+│   │   └── req.validation.js     # Express-validator input schemas
 │   ├── model/
-│   │   ├── link.schema.js        # Link data model
-│   │   └── user.schema.js        # User data model & auth methods
+│   │   ├── link.schema.js        # Link data schema, indexes & validation
+│   │   └── user.schema.js        # User model, password hashing & JWT helpers
 │   ├── routes/
-│   │   └── user.route.js         # API routes
+│   │   └── user.route.js         # HTTP routing definitions
 │   ├── services/
-│   │   └── user.service.js       # Business logic services
+│   │   └── user.service.js       # Database queries, Redis caching & link operations
 │   ├── utils/
-│   │   └── global.error.js       # Custom error class
-│   ├── .dockerignore             # Docker build exclusions
-│   ├── .env                      # Local environment variables
-│   ├── .env.example              # Environment variables template
-│   ├── .prettierignore           # Prettier ignore patterns
-│   ├── .prettierrc               # Prettier configuration
+│   │   └── global.error.js       # Centralized application error class
 │   ├── Dockerfile                # Multi-stage production container definition
-│   ├── package.json              # NPM manifest & scripts
-│   └── server.js                 # HTTP server entry point
-├── frontend/                     # Client application (Vite / React / Next.js)
-│   └── README.md
-├── docker-compose.yml            # Production Docker Compose stack
-├── docker-compose.dev.yml        # Development Docker Compose stack with live-reload
-├── .gitignore                    # Git tracked exclusions
-├── .prettierrc                   # Root Prettier configuration
-└── .prettierignore               # Root Prettier exclusions
+│   ├── package.json              # Backend dependencies and scripts
+│   └── server.js                 # Express server initialization & lifecycle
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── atoms/            # Atomic UI elements (Buttons, ThemeToggle)
+│   │   │   ├── molecules/        # Composite components (CopyButton, EmptyState)
+│   │   │   └── organisms/        # Views (Dashboard, Inspect, Profile, Home, Navbar)
+│   │   ├── context/              # React contexts (Auth, Toast, Confirm)
+│   │   ├── App.jsx               # Root application router & layout
+│   │   └── main.jsx              # React DOM mounting
+│   ├── package.json              # Frontend dependencies and scripts
+│   └── vite.config.js            # Vite configuration & development proxy
+│
+├── docker-compose.yml            # Production multi-container Docker stack
+├── docker-compose.dev.yml        # Development Docker stack with volume mounts
+└── README.md
 ```
 
 ---
 
-## ⚙️ Environment Variables
+## 📋 Prerequisites
 
-The backend uses environment variables. Copy `.env.example` in `backend/`:
+Before running the application locally, ensure you have the following installed:
+
+- **Node.js**: `v18.x` or later (LTS recommended)
+- **npm**: `v9.x` or later
+- **MongoDB**: `v6.0+` running locally or accessible via network
+- **Redis Server**: `v6.0+` running locally or accessible via network
+- **Docker & Docker Compose** *(Optional, for containerized execution)*
+
+---
+
+## ⚙️ Configuration & Environment Setup
+
+### 1. Backend Configuration
+
+Navigate into the `backend` directory and create your `.env` configuration file:
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-| Variable     | Default                     | Description                                                  |
-| ------------ | --------------------------- | ------------------------------------------------------------ |
-| `PORT`       | `5000`                      | Application server port                                      |
-| `NODE_ENV`   | `development`               | Environment mode (`development`, `production`)               |
-| `MONGO_URI`  | `mongodb://127.0.0.1:27017` | MongoDB connection URI (`mongodb://mongodb:27017` in Docker) |
-| `JWT_SECRET` | `your_jwt_secret_key_here`  | Secret key for signing and verifying JWT tokens              |
+Configure the following variables in `backend/.env`:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PORT` | `5001` | HTTP port the Express server listens on |
+| `NODE_ENV` | `development` | Environment mode (`development`, `production`, `test`) |
+| `MONGO_URI` | `mongodb://127.0.0.1:27017/LinkShortener` | MongoDB connection string |
+| `JWT_SECRET` | `your_secret_key_here` | Secret key used for signing and verifying JWT tokens |
+| `REDIS_HOST` | `127.0.0.1` | Hostname or IP address of the Redis instance |
+| `REDIS_PORT` | `6379` | Port number of the Redis instance |
+| `REDIS_PASSWORD` | *(Optional)* | Password for Redis authentication if configured |
 
 ---
 
-## 🐳 Running with Docker & Docker Compose
+## 🚀 Getting Started (Local Setup)
 
-From the root directory:
+### Step 1: Start Supporting Services
 
-### 1. Production Stack (Recommended)
-
-Spins up the backend API and MongoDB container:
+Ensure your local MongoDB and Redis instances are running:
 
 ```bash
-# Build and start services in detached mode
-docker compose up --build -d
+# Check Redis status
+redis-cli ping
+# Expected output: PONG
 
-# View logs
-docker compose logs -f
-
-# Stop services
-docker compose down
+# Check MongoDB status
+mongosh --eval "db.adminCommand('ping')"
 ```
 
-The API will be accessible at `http://localhost:5000`.
+### Step 2: Set Up & Run Backend
 
-### 2. Development Stack (with Live Reload)
-
-Mounts the `./backend` directory into the container for live reload on file changes:
-
-```bash
-docker compose -f docker-compose.dev.yml up --build
-```
-
-### 3. Standalone Docker Container
-
-```bash
-# Build the Docker image from backend directory
-docker build -t link-shortener-backend ./backend
-
-# Run container
-docker run -p 5000:5000 \
-  -e PORT=5000 \
-  -e MONGO_URI="mongodb://host.docker.internal:27017" \
-  -e JWT_SECRET="your_jwt_secret_key" \
-  link-shortener-backend
-```
-
----
-
-## 💻 Local Development (Without Docker)
-
-### Backend
+In a terminal, navigate to the `backend/` folder:
 
 ```bash
 cd backend
@@ -117,42 +154,79 @@ cd backend
 # Install dependencies
 npm install
 
-# Start development server with file watching
+# Run backend development server with live reload
 npm run dev
-
-# Start production server
-npm start
 ```
 
----
+The backend server will start on `http://localhost:5001` (or your configured `PORT`).
 
-## 🧹 Code Formatting (Prettier)
+### Step 3: Set Up & Run Frontend
 
-In the `backend` directory:
+In a separate terminal, navigate to the `frontend/` folder:
 
 ```bash
-# Check code formatting
-npm run format:check
+cd frontend
 
-# Auto-format all files
-npm run format
+# Install dependencies
+npm install
+
+# Start Vite development server
+npm run dev
+```
+
+The frontend client will be available at `http://localhost:5173`. The Vite dev server is pre-configured to proxy `/api` requests directly to the backend.
+
+---
+
+## 🐳 Running with Docker
+
+You can run the entire environment using Docker Compose without manually installing Node.js, Redis, or MongoDB locally.
+
+### Start All Services
+
+From the project root:
+
+```bash
+# Build and launch containers in background
+docker compose up --build -d
+
+# Follow container logs
+docker compose logs -f
+
+# Shut down containers
+docker compose down
 ```
 
 ---
 
-## 📡 Backend API Endpoints
+## 🛠️ Available Development Scripts
 
-### Health Check
+### Backend (`/backend`)
 
-- `GET /health` - Service health status & uptime
+- `npm run dev`: Starts the backend server with Node.js `--watch` for automatic reloads on changes.
+- `npm start`: Starts the production server.
+- `npm run format`: Formats backend codebase using Prettier.
+- `npm run format:check`: Validates formatting compliance.
 
-### User & Auth
+### Frontend (`/frontend`)
 
-- `POST /api/register` - Register a new user (`name`, `email`, `password`)
-- `POST /api/login` - Authenticate user and receive JWT token
-- `GET /api/profile` - Get logged-in user profile (requires Bearer token header)
+- `npm run dev`: Starts the Vite development server with Hot Module Replacement (HMR).
+- `npm run build`: Compiles and bundles the production assets into `dist/`.
+- `npm run preview`: Previews the production build locally.
+- `npm run lint`: Runs ESLint to check for code standard violations.
 
-### URL Management
+---
 
-- `POST /api/v1/newurl` - Shorten a URL (`url` in body, Bearer token header)
-- `GET /api/v1/:redirectKey` - Redirect to original long URL
+## 👤 Author & Contact
+
+**Mohit Dev**
+- Email: [mohitdevx@proton.me](mailto:mohitdevx@proton.me)
+- Portfolio: [portfolio.h4x.co.in](https://portfolio.h4x.co.in)
+- GitHub: [@mohitdevx](https://github.com/mohitdevx)
+- LinkedIn: [linkedin.com/in/mohitdevx](https://linkedin.com/in/mohitdevx)
+
+---
+
+## 📄 License
+
+This project is open-source and available under the [MIT License](LICENSE).

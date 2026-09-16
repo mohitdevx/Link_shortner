@@ -72,6 +72,37 @@ export const DashboardView = ({ onInspect }) => {
     fetchLinks(offset);
   }, [offset, token]);
 
+  // Real-time click updates: silently re-fetch metrics every 5 seconds
+  useEffect(() => {
+    if (!token) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/profile?offset=${offset}&limit=${PAGE_LIMIT}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setLinks(data.data || []);
+          if (data.pagination) {
+            setTotalLinks(data.pagination.total || 0);
+            setTotalClicks(data.pagination.totalClicks || 0);
+            setHasMore(Boolean(data.pagination.hasMore));
+          }
+        }
+      } catch {
+        // silent polling error
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [offset, token]);
+
   const handlePrevPage = () => {
     if (offset <= 0 || loading) return;
     const prevOffset = Math.max(0, offset - PAGE_LIMIT);

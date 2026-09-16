@@ -33,7 +33,12 @@ export const userRegister = async (req, res) => {
   const { username, email, fullName, password } = req.body;
 
   try {
-    const user = await registerFunction({ username, email, fullName, password });
+    const user = await registerFunction({
+      username,
+      email,
+      fullName,
+      password,
+    });
     const token = user.generateToken();
 
     return res.status(201).json({
@@ -142,6 +147,115 @@ export const getCurrentUser = async (req, res) => {
     return res.status(401).json({
       success: false,
       message: "Session expired or invalid",
+    });
+  }
+};
+
+export const updateUserProfile = async (req, res) => {
+  const token = extractToken(req);
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication token required",
+    });
+  }
+
+  try {
+    const dummy = new userModel();
+    const decodedToken = await dummy.jwtVerify(token);
+    if (!decodedToken?.userId) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const user = await userModel.findById(decodedToken.userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const { username, email, fullName, currentPassword, newPassword } =
+      req.body;
+
+    // Check username uniqueness if changed
+    if (username && username.toLowerCase().trim() !== user.username) {
+      const existingUser = await userModel.findOne({
+        username: username.toLowerCase().trim(),
+        _id: { $ne: user._id },
+      });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Username is already taken",
+        });
+      }
+      user.username = username.toLowerCase().trim();
+    }
+
+    // Check email uniqueness if changed
+    if (email && email.toLowerCase().trim() !== user.email) {
+      const existingEmail = await userModel.findOne({
+        email: email.toLowerCase().trim(),
+        _id: { $ne: user._id },
+      });
+      if (existingEmail) {
+        return res.status(409).json({
+          success: false,
+          message: "Email is already registered",
+        });
+      }
+      user.email = email.toLowerCase().trim();
+    }
+
+    // Update full name if provided
+    if (fullName !== undefined) {
+      user.fullName = fullName.trim();
+    }
+
+    // Password change verification
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password is required to change password",
+        });
+      }
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password does not match",
+        });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be at least 6 characters long",
+        });
+      }
+      user.password = newPassword;
+    }
+
+    await user.save();
+
+    const newToken = user.generateToken();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      token: newToken,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to update profile",
     });
   }
 };
@@ -359,5 +473,3 @@ export const getLinkClicksController = async (req, res) => {
     });
   }
 };
-
-

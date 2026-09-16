@@ -11,6 +11,7 @@ import {
   redirectUrlController,
   getProfile,
   getCurrentUser,
+  updateUserProfile,
   deleteUrlController,
   claimUrlController,
   inspectLinkController,
@@ -23,6 +24,7 @@ export const userRouter = Router();
 userRouter.post("/register", registerValidator, userRegister);
 userRouter.post("/login", loginValidator, userLogin);
 userRouter.get("/me", getCurrentUser);
+userRouter.put("/me", updateUserProfile);
 userRouter.get("/profile", getProfile);
 
 // Link routes
@@ -33,4 +35,3 @@ userRouter.get("/v1/clicks/:redirectKey", getLinkClicksController);
 userRouter.get("/v1/:redirectKey", redirectUrlController);
 userRouter.delete("/v1/:redirectKey", deleteUrlController);
 userRouter.get("/:redirectKey", redirectUrlController);
-

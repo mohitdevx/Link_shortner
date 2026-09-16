@@ -16,6 +16,14 @@ const healthHandler = (req, res) => {
   });
 };
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "ShortLink API Engine is active",
+    status: "running",
+    health: "/health",
+  });
+});
+
 app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
 

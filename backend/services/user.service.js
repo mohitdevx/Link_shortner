@@ -11,7 +11,12 @@ import {
   incrCache,
 } from "../config/redis.js";
 
-export const registerFunction = async ({ username, email, fullName, password }) => {
+export const registerFunction = async ({
+  username,
+  email,
+  fullName,
+  password,
+}) => {
   if (!username || !email || !fullName || !password) {
     throw new AppError("All fields are required", 400);
   }
@@ -44,7 +49,12 @@ export const registerFunction = async ({ username, email, fullName, password }) 
   return user;
 };
 
-export const loginFunction = async ({ identifier, username, email, password }) => {
+export const loginFunction = async ({
+  identifier,
+  username,
+  email,
+  password,
+}) => {
   const loginKey = (identifier || email || username || "").toLowerCase().trim();
   if (!loginKey || !password) {
     throw new AppError("Email/username and password are required", 400);
@@ -387,4 +397,3 @@ export const deleteLinkFunction = async ({ redirectKey, token }) => {
 
   return deleted;
 };
-

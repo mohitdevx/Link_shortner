@@ -4,6 +4,7 @@ import { DashboardView } from "./components/organisms/DashboardView.jsx";
 import { HomePage } from "./components/organisms/HomePage.jsx";
 import { InspectLinkView } from "./components/organisms/InspectLinkView.jsx";
 import { Navbar } from "./components/organisms/Navbar.jsx";
+import { ProfileView } from "./components/organisms/ProfileView.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
 const parseRouteFromLocation = () => {
@@ -12,16 +13,22 @@ const parseRouteFromLocation = () => {
   if (match) {
     return { view: "inspect", key: match[1] };
   }
+  if (path === "/profile") {
+    return { view: "profile", key: null };
+  }
   if (path === "/dashboard") {
     return { view: "dashboard", key: null };
   }
-  return { view: "home", key: null };
+  return { view: null, key: null };
 };
 
 export default function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const initialRoute = parseRouteFromLocation();
-  const [activeView, setActiveView] = useState(initialRoute.view);
+  const [activeView, setActiveView] = useState(() => {
+    if (initialRoute.view) return initialRoute.view;
+    return isAuthenticated ? "dashboard" : "home";
+  });
   const [inspectKey, setInspectKey] = useState(initialRoute.key);
 
   const [authModalState, setAuthModalState] = useState({
@@ -29,17 +36,33 @@ export default function App() {
     mode: "login",
   });
 
+  // Keep view in sync when authentication state changes or loads
+  useEffect(() => {
+    if (isLoading) return;
+    const currentRoute = parseRouteFromLocation();
+    if (!currentRoute.view) {
+      setActiveView(isAuthenticated ? "dashboard" : "home");
+    } else if ((currentRoute.view === "dashboard" || currentRoute.view === "profile") && !isAuthenticated) {
+      setActiveView("home");
+      window.history.replaceState({ view: "home" }, "", "/");
+    }
+  }, [isAuthenticated, isLoading]);
+
   // Synchronize browser history (popstate events)
   useEffect(() => {
     const handlePopState = () => {
       const route = parseRouteFromLocation();
-      setActiveView(route.view);
+      if (!route.view) {
+        setActiveView(isAuthenticated ? "dashboard" : "home");
+      } else {
+        setActiveView(route.view);
+      }
       setInspectKey(route.key);
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [isAuthenticated]);
 
   const handleOpenAuth = (mode = "login") => {
     setAuthModalState({ isOpen: true, mode });
@@ -58,14 +81,17 @@ export default function App() {
   };
 
   const handleViewChange = (view) => {
-    if (view === "dashboard" && !isAuthenticated) {
+    if ((view === "dashboard" || view === "profile") && !isAuthenticated) {
       handleOpenAuth("login");
       return;
     }
 
     setInspectKey(null);
     setActiveView(view);
-    const targetPath = view === "dashboard" ? "/dashboard" : "/";
+    let targetPath = "/";
+    if (view === "dashboard") targetPath = "/dashboard";
+    else if (view === "profile") targetPath = "/profile";
+
     window.history.pushState({ view }, "", targetPath);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -93,6 +119,8 @@ export default function App() {
             onBack={() => handleViewChange(isAuthenticated ? "dashboard" : "home")}
             onOpenAuth={handleOpenAuth}
           />
+        ) : activeView === "profile" ? (
+          <ProfileView onBack={() => handleViewChange("dashboard")} />
         ) : (
           <DashboardView onInspect={handleInspectLink} />
         )}
@@ -149,24 +177,6 @@ export default function App() {
               <span>mohitdevx</span>
             </a>
           </div>
-
-          {/* Views */}
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => handleViewChange("home")}
-              className="hover:text-foreground cursor-pointer transition-colors"
-            >
-              Home
-            </button>
-            <button
-              type="button"
-              onClick={() => handleViewChange("dashboard")}
-              className="hover:text-foreground cursor-pointer transition-colors"
-            >
-              Dashboard
-            </button>
-          </div>
         </div>
       </footer>
 
@@ -177,6 +187,7 @@ export default function App() {
         defaultMode={authModalState.mode}
         onSuccess={() => {
           setActiveView("dashboard");
+          window.history.pushState({ view: "dashboard" }, "", "/dashboard");
         }}
       />
     </div>

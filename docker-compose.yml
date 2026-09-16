@@ -9,12 +9,17 @@ services:
       - "${PORT:-5000}:5000"
     environment:
       - PORT=5000
-      - MONGO_URI=mongodb://mongodb:27017
-      - NODE_ENV=production
-      - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey_change_me_in_production_12345}
+      - NODE_ENV=${NODE_ENV:-production}
+      - JWT_SECRET=${JWT_SECRET}
+      - MONGO_URI=${MONGO_URI:-mongodb://admin:secret_key@mongodb:27017/LinkShortener?authSource=admin}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
       mongodb:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - app_network
 
@@ -27,13 +32,39 @@ services:
     volumes:
       - mongo_data:/data/db
     networks:
-      - app_network
+      app_network:
+        aliases:
+          - mongodb
+          - mongo_db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-secret_key}
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: >
+        mongosh -u "$${MONGO_INITDB_ROOT_USERNAME:-admin}" -p "$${MONGO_INITDB_ROOT_PASSWORD:-secret_key}" --authenticationDatabase admin --eval "db.adminCommand('ping')" || mongosh --eval "db.adminCommand('ping')"
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  redis:
+    image: redis:alpine
+    container_name: link_shortener_redis
+    restart: unless-stopped
+    command: >
+      sh -c '
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --requirepass "$$REDIS_PASSWORD"
+        else
+          exec redis-server
+        fi
+      '
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - app_network
 
 networks:
   app_network:
@@ -42,3 +73,4 @@ networks:
 volumes:
   mongo_data:
     driver: local
+

@@ -8,11 +8,14 @@ WORKDIR /app
 # Install build dependencies for native packages (e.g., bcrypt)
 RUN apk add --no-cache python3 make g++
 
+# Install pnpm 
+RUN corepack enable && corepack prepare pnpm@latest --active
+
 # Copy package manifests
-COPY package*.json ./
+COPY package*.json pnpm-lock.yaml ./
 
 # Install production dependencies only
-RUN npm ci --omit=dev
+RUN pnpm install
 
 # ==========================================
 # Stage 2: Production Runner

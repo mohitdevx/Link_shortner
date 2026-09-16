@@ -42,6 +42,28 @@ export const InspectLinkView = ({ redirectKey, onBack }) => {
     fetchInspection();
   }, [fetchInspection]);
 
+  // Real-time click tracking: auto-poll Redis every 5 seconds
+  useEffect(() => {
+    if (!redirectKey) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/v1/clicks/${redirectKey}`);
+        const json = await res.json();
+        if (res.ok && json.success && json.data) {
+          setData((prev) => {
+            if (!prev || prev.clicks === json.data.clicks) return prev;
+            return { ...prev, clicks: json.data.clicks };
+          });
+        }
+      } catch {
+        // silent background polling error
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [redirectKey]);
+
   const handleRefreshClicks = async () => {
     if (!redirectKey || refreshingClicks) return;
     setRefreshingClicks(true);

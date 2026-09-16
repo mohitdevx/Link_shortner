@@ -50,5 +50,8 @@ export const loginValidator = [
 ];
 
 export const urlValidator = [
-  body("url").trim().notEmpty().withMessage("Valid destination URL is required"),
+  body("url")
+    .trim()
+    .notEmpty()
+    .withMessage("Valid destination URL is required"),
 ];
