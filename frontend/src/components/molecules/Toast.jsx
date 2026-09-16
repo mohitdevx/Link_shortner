@@ -1,17 +1,18 @@
 import { useEffect } from "react";
 
-const toastIcons = {
-  success: "ri-checkbox-circle-fill text-success",
-  error: "ri-error-warning-fill text-error",
-  warning: "ri-alert-fill text-warning",
-  info: "ri-information-fill text-info",
-};
-
-const toastBorderColors = {
-  success: "border-l-4 border-l-success",
-  error: "border-l-4 border-l-error",
-  warning: "border-l-4 border-l-warning",
-  info: "border-l-4 border-l-info",
+const toastConfig = {
+  success: {
+    icon: "ri-checkbox-circle-line text-emerald-500",
+  },
+  error: {
+    icon: "ri-error-warning-line text-red-500",
+  },
+  warning: {
+    icon: "ri-alert-line text-amber-500",
+  },
+  info: {
+    icon: "ri-information-line text-blue-500",
+  },
 };
 
 export const Toast = ({
@@ -19,7 +20,7 @@ export const Toast = ({
   type = "info",
   title,
   message,
-  duration = 4000,
+  duration = 3500,
   onClose,
 }) => {
   useEffect(() => {
@@ -30,34 +31,49 @@ export const Toast = ({
     return () => clearTimeout(timer);
   }, [id, duration, onClose]);
 
+  const config = toastConfig[type] || toastConfig.info;
+
+  // Don't display redundant stacked title if it is just "Success", "Error", or "Information"
+  const hasCustomTitle =
+    title &&
+    title.toLowerCase() !== type.toLowerCase() &&
+    title.toLowerCase() !== "information";
+
   return (
     <div
       role="alert"
-      className={`flex items-start gap-3 w-80 max-w-full p-3.5 bg-card text-card-foreground border border-border ${toastBorderColors[type] || toastBorderColors.info} rounded shadow-sm`}
+      className="flex items-center gap-2.5 min-w-[260px] max-w-sm px-3.5 py-2.5 rounded-lg border border-border/40 bg-card/95 backdrop-blur-md text-foreground shadow-lg shadow-black/5 animate-in fade-in slide-in-from-bottom-2 duration-200"
     >
-      <i
-        className={`${toastIcons[type] || toastIcons.info} text-lg leading-none mt-0.5 shrink-0`}
-      />
-      <div className="flex-1 min-w-0">
-        {title && (
-          <h4 className="text-sm font-semibold text-foreground leading-snug">
-            {title}
-          </h4>
-        )}
-        {message && (
-          <p className="text-xs text-muted-foreground mt-0.5 break-words">
-            {message}
+      <i className={`${config.icon} text-base shrink-0 leading-none`} />
+
+      <div className="flex-1 min-w-0 pr-1">
+        {hasCustomTitle ? (
+          <>
+            <h4 className="text-xs font-semibold text-foreground leading-tight">
+              {title}
+            </h4>
+            {message && (
+              <p className="text-2xs text-muted-foreground mt-0.5 leading-snug break-words">
+                {message}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-xs font-medium text-foreground leading-snug break-words">
+            {message || title}
           </p>
         )}
       </div>
+
       <button
         type="button"
         onClick={() => onClose(id)}
-        className="text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded transition-colors shrink-0"
-        aria-label="Close notification"
+        className="text-muted-foreground/60 hover:text-foreground p-1 rounded transition-colors cursor-pointer shrink-0"
+        aria-label="Dismiss"
       >
-        <i className="ri-close-line text-base leading-none" />
+        <i className="ri-close-line text-sm leading-none" />
       </button>
     </div>
   );
 };
+

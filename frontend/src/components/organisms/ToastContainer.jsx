@@ -6,7 +6,7 @@ export const ToastContainer = ({ toasts = [], onClose }) => {
   return (
     <div
       aria-live="polite"
-      className="fixed top-4 right-4 z-50 flex flex-col gap-2.5 pointer-events-none"
+      className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2 pointer-events-none"
     >
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">
