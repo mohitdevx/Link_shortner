@@ -118,11 +118,11 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
         <div className="w-full max-w-3xl mx-auto space-y-3">
           <form
             onSubmit={handleShorten}
-            className="group relative rounded-lg border-0 bg-card p-2 sm:p-2.5 flex flex-col sm:flex-row items-center gap-2.5 shadow-lg hover:shadow-xl focus-within:shadow-xl focus-within:ring-2 focus-within:ring-primary/25 transition-all duration-200"
+            className="group relative rounded-lg border border-border/40 bg-card p-1.5 flex flex-col sm:flex-row items-center gap-2 shadow-sm hover:shadow-md focus-within:shadow-md focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200"
           >
             {/* Left Protocol / Icon Group */}
-            <div className="flex items-center gap-3 w-full pl-3 pr-2">
-              <i className="ri-link text-muted-foreground text-lg shrink-0" />
+            <div className="flex items-center gap-2.5 w-full pl-3 pr-2">
+              <i className="ri-link text-muted-foreground text-base shrink-0" />
               <span className="text-xs text-muted-foreground/60 select-none font-mono hidden sm:inline-block">
                 https://
               </span>
@@ -137,7 +137,7 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
                   setInputUrl(e.target.value);
                   if (urlError) setUrlError("");
                 }}
-                className="w-full bg-transparent border-none text-foreground placeholder:text-muted-foreground/40 text-sm sm:text-base outline-none focus:outline-none tracking-normal font-sans"
+                className="w-full bg-transparent border-none text-foreground placeholder:text-muted-foreground/40 text-sm outline-none focus:outline-none tracking-normal font-sans py-1"
                 autoComplete="off"
                 spellCheck="false"
               />
@@ -150,7 +150,7 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
                   className="p-1 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer shrink-0"
                   title="Clear input"
                 >
-                  <i className="ri-close-line text-base leading-none" />
+                  <i className="ri-close-line text-sm leading-none" />
                 </button>
               )}
             </div>
@@ -159,17 +159,17 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full sm:w-auto shrink-0 rounded-md px-6 h-10 font-medium text-sm bg-primary text-primary-foreground hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full sm:w-auto shrink-0 rounded-md px-4 h-8.5 font-medium text-xs sm:text-sm bg-primary text-primary-foreground hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             >
               {loading ? (
                 <>
-                  <i className="ri-loader-4-line animate-spin text-sm" />
+                  <i className="ri-loader-4-line animate-spin text-xs" />
                   <span>Processing</span>
                 </>
               ) : (
                 <>
                   <span>Shorten</span>
-                  <i className="ri-arrow-right-line text-sm leading-none" />
+                  <i className="ri-arrow-right-line text-xs leading-none" />
                 </>
               )}
             </button>

@@ -1,4 +1,3 @@
-import { Button } from "../atoms/Button.jsx";
 import { ThemeToggle } from "../atoms/ThemeToggle.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
@@ -8,28 +7,28 @@ export const Navbar = ({ activeView, onViewChange, onOpenAuth }) => {
   return (
     <header className="w-full border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Brand */}
+        {/* Left: Brand & Nav Links */}
         <div className="flex items-center gap-8">
           <button
             type="button"
             onClick={() => onViewChange("home")}
-            className="flex items-center gap-2 group cursor-pointer focus:outline-none"
+            className="flex items-center gap-2 group cursor-pointer focus:outline-none select-none"
           >
-            {/* Logo icon with NO background */}
-            <i className="ri-link-m text-2xl text-primary leading-none transition-transform group-hover:scale-105" />
-            <span className="text-base font-semibold tracking-tight text-foreground">
+            {/* Large link icon without background */}
+            <i className="ri-link-m text-3xl font-semibold text-primary leading-none transition-transform duration-200 group-hover:scale-105" />
+            <span className="text-xl font-bold tracking-tight text-foreground font-sans">
               shortlink
             </span>
           </button>
 
-          {/* Clean Nav Links */}
+          {/* Clean, minimal nav links */}
           <nav className="hidden sm:flex items-center gap-6 text-sm">
             <button
               type="button"
               onClick={() => onViewChange("home")}
-              className={`transition-colors cursor-pointer ${
+              className={`font-medium transition-colors cursor-pointer ${
                 activeView === "home"
-                  ? "text-foreground font-medium"
+                  ? "text-foreground font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -39,9 +38,9 @@ export const Navbar = ({ activeView, onViewChange, onOpenAuth }) => {
               <button
                 type="button"
                 onClick={() => onViewChange("dashboard")}
-                className={`transition-colors cursor-pointer ${
+                className={`font-medium transition-colors cursor-pointer ${
                   activeView === "dashboard"
-                    ? "text-foreground font-medium"
+                    ? "text-foreground font-semibold"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -51,9 +50,11 @@ export const Navbar = ({ activeView, onViewChange, onOpenAuth }) => {
           </nav>
         </div>
 
-        {/* Right Actions */}
+        {/* Right: Actions */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
+
+          <div className="h-4 w-px bg-border/50 hidden sm:block" />
 
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
@@ -61,8 +62,9 @@ export const Navbar = ({ activeView, onViewChange, onOpenAuth }) => {
                 type="button"
                 onClick={() => onViewChange("dashboard")}
                 className="hidden md:flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Go to dashboard"
               >
-                <div className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center text-foreground font-medium text-xs">
+                <div className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-medium text-xs">
                   {(user?.fullName || user?.username || "U").charAt(0).toUpperCase()}
                 </div>
                 <span className="font-medium text-foreground max-w-[120px] truncate">
@@ -70,32 +72,30 @@ export const Navbar = ({ activeView, onViewChange, onOpenAuth }) => {
                 </span>
               </button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                icon="ri-logout-box-r-line"
+              <button
+                type="button"
                 onClick={logout}
-                title="Sign out"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted/60 transition-colors cursor-pointer"
               >
-                <span className="hidden sm:inline">Sign Out</span>
-              </Button>
+                Sign out
+              </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => onOpenAuth("login")}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
               >
-                Sign In
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
+                Sign in
+              </button>
+              <button
+                type="button"
                 onClick={() => onOpenAuth("signup")}
+                className="text-sm font-medium bg-foreground text-background hover:opacity-90 px-3.5 py-1.5 rounded-lg transition-opacity shadow-xs cursor-pointer"
               >
                 Get Started
-              </Button>
+              </button>
             </div>
           )}
         </div>

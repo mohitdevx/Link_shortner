@@ -27,12 +27,14 @@ export const ThemeToggle = ({ className = "" }) => {
     <button
       type="button"
       onClick={() => setIsDark((prev) => !prev)}
-      className={`inline-flex items-center justify-center p-2 rounded border border-border bg-secondary text-secondary-foreground hover:bg-secondary-hover transition-colors cursor-pointer select-none ${className}`}
+      className={`p-1 text-muted-foreground cursor-pointer select-none focus:outline-none ${className}`}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-label="Toggle theme"
     >
       <i
-        className={`${isDark ? "ri-sun-line text-warning" : "ri-moon-line text-foreground"} text-base leading-none`}
+        className={`${
+          isDark ? "ri-sun-line" : "ri-moon-line"
+        } text-xl leading-none`}
       />
     </button>
   );

@@ -28,6 +28,3 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Run the project
-        run: pnpm start
