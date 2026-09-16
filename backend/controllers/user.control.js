@@ -249,13 +249,16 @@ export const getProfile = async (req, res) => {
   }
 
   try {
-    const links = await userFunction({ token });
+    const offset = req.query.offset !== undefined ? req.query.offset : 0;
+    const limit = req.query.limit !== undefined ? req.query.limit : 8;
+
+    const result = await userFunction({ token, offset, limit });
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     return res.status(200).json({
       message: "Profile links fetched successfully",
       success: true,
-      data: links.map((link) => ({
+      data: result.links.map((link) => ({
         _id: link._id,
         originalUrl: link.originalUrl,
         shortUrl: `${baseUrl}/api/v1/${link.redirectKey}`,
@@ -263,6 +266,13 @@ export const getProfile = async (req, res) => {
         createdAt: link.createdAt,
         clicks: link.clicks,
       })),
+      pagination: {
+        total: result.total,
+        totalClicks: result.totalClicks,
+        offset: result.offset,
+        limit: result.limit,
+        hasMore: result.hasMore,
+      },
     });
   } catch (err) {
     return res.status(err.statusCode || 401).json({

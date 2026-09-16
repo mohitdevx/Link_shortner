@@ -140,7 +140,7 @@ export const redirectFunction = async ({ redirectKey }) => {
   return link.originalUrl;
 };
 
-export const userFunction = async ({ token }) => {
+export const userFunction = async ({ token, offset = 0, limit = 8 }) => {
   if (!token) {
     throw new AppError("Token is required", 401);
   }
@@ -151,11 +151,30 @@ export const userFunction = async ({ token }) => {
     throw new AppError("Invalid or expired token", 401);
   }
 
+  const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 8, 1), 50);
+  const skip = Math.max(parseInt(offset, 10) || 0, 0);
+
+  const allUserLinks = await linkModel.find(
+    { owner: decodedToken.userId },
+    { clicks: 1 }
+  );
+  const total = allUserLinks.length;
+  const totalClicks = allUserLinks.reduce((acc, l) => acc + (l.clicks || 0), 0);
+
   const links = await linkModel
     .find({ owner: decodedToken.userId })
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parsedLimit);
 
-  return links || [];
+  return {
+    links: links || [],
+    total,
+    totalClicks,
+    offset: skip,
+    limit: parsedLimit,
+    hasMore: skip + (links?.length || 0) < total,
+  };
 };
 
 export const deleteLinkFunction = async ({ redirectKey, token }) => {

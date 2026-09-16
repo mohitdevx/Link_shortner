@@ -5,7 +5,7 @@ export const Navbar = ({ activeView, onViewChange, onOpenAuth }) => {
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
-    <header className="w-full border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
+    <header className="w-full bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Left: Brand & Nav Links */}
         <div className="flex items-center gap-8">

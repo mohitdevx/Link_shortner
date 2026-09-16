@@ -6,6 +6,8 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useConfirm } from "../../context/ConfirmContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 
+const PAGE_LIMIT = 8;
+
 export const DashboardView = () => {
   const { token, user } = useAuth();
   const toast = useToast();
@@ -22,31 +24,65 @@ export const DashboardView = () => {
   const [urlInput, setUrlInput] = useState("");
   const [urlError, setUrlError] = useState("");
 
-  const fetchLinks = useCallback(async () => {
-    if (!token) return;
-    try {
-      setLoading(true);
-      const res = await fetch("/api/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setLinks(data.data || []);
-      } else {
-        toastRef.current.error(data.message || "Failed to load links");
+  const [offset, setOffset] = useState(0);
+  const [totalLinks, setTotalLinks] = useState(0);
+  const [totalClicks, setTotalClicks] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const fetchLinks = useCallback(
+    async (targetOffset = offset) => {
+      if (!token) return;
+      try {
+        setLoading(true);
+        const res = await fetch(
+          `/api/profile?offset=${targetOffset}&limit=${PAGE_LIMIT}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setLinks(data.data || []);
+          if (data.pagination) {
+            setTotalLinks(data.pagination.total || 0);
+            setTotalClicks(data.pagination.totalClicks || 0);
+            setHasMore(Boolean(data.pagination.hasMore));
+          } else {
+            setTotalLinks(data.data?.length || 0);
+            setTotalClicks(
+              (data.data || []).reduce((acc, l) => acc + (l.clicks || 0), 0)
+            );
+          }
+        } else {
+          toastRef.current.error(data.message || "Failed to load links");
+        }
+      } catch {
+        toastRef.current.error("Network error fetching links");
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      toastRef.current.error("Network error fetching links");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+    },
+    [token, offset]
+  );
 
   useEffect(() => {
-    fetchLinks();
-  }, [fetchLinks]);
+    fetchLinks(offset);
+  }, [offset, token]);
+
+  const handlePrevPage = () => {
+    if (offset <= 0 || loading) return;
+    const prevOffset = Math.max(0, offset - PAGE_LIMIT);
+    setOffset(prevOffset);
+  };
+
+  const handleNextPage = () => {
+    if (!hasMore || loading) return;
+    const nextOffset = offset + PAGE_LIMIT;
+    setOffset(nextOffset);
+  };
 
   const handleShorten = async (e) => {
     e.preventDefault();
@@ -72,7 +108,8 @@ export const DashboardView = () => {
       if (res.ok && data.success) {
         toast.success("Short link created!");
         setUrlInput("");
-        fetchLinks();
+        setOffset(0);
+        fetchLinks(0);
       } else {
         toast.error(data.message || "Failed to create short link");
         setUrlError(data.message || "Failed to create link");
@@ -106,7 +143,7 @@ export const DashboardView = () => {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success("Short link deleted");
-        setLinks((prev) => prev.filter((l) => l.redirectKey !== redirectKey));
+        fetchLinks(offset);
       } else {
         toast.error(data.message || "Failed to delete link");
       }
@@ -115,55 +152,75 @@ export const DashboardView = () => {
     }
   };
 
-  const totalClicks = links.reduce((acc, l) => acc + (l.clicks || 0), 0);
+  const filteredLinks = links.filter((link) => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      link.shortUrl?.toLowerCase().includes(q) ||
+      link.originalUrl?.toLowerCase().includes(q) ||
+      link.redirectKey?.toLowerCase().includes(q)
+    );
+  });
+
+  const totalPages = Math.max(1, Math.ceil(totalLinks / PAGE_LIMIT));
+  const currentPage = Math.floor(offset / PAGE_LIMIT) + 1;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-6 py-10 sm:py-14 space-y-10">
-      {/* 1. Dashboard Header & Live Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/40">
+    <div className="w-full max-w-4xl mx-auto px-6 py-10 sm:py-14 space-y-8">
+      {/* 1. Dashboard Header */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-2">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Links
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Logged in as <span className="font-medium text-foreground">{user?.fullName || user?.username}</span>
+            {totalLinks} active {totalLinks === 1 ? "endpoint" : "endpoints"} •{" "}
+            {totalClicks.toLocaleString()} total clicks recorded
           </p>
         </div>
 
-        {/* Minimalist Inline Counters */}
-        <div className="flex items-center gap-6 text-xs">
-          <div>
-            <span className="text-muted-foreground block text-2xs uppercase tracking-wider">
-              Total Links
-            </span>
-            <span className="text-lg font-bold text-foreground">
-              {links.length}
-            </span>
-          </div>
-          <div>
-            <span className="text-muted-foreground block text-2xs uppercase tracking-wider">
-              Total Clicks
-            </span>
-            <span className="text-lg font-bold text-foreground">
-              {totalClicks.toLocaleString()}
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="ri-refresh-line"
-            loading={loading}
-            onClick={fetchLinks}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {totalLinks > 0 && (
+            <div className="relative">
+              <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-xs" />
+              <input
+                type="text"
+                placeholder="Search page..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-44 sm:w-52 h-8 pl-8 pr-7 rounded-md border border-border/40 bg-card text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all font-sans"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  title="Clear search"
+                >
+                  <i className="ri-close-line text-xs" />
+                </button>
+              )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => fetchLinks(offset)}
+            disabled={loading}
+            className="h-8 px-2.5 rounded-md border border-border/40 bg-card hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             title="Refresh links"
-          />
+          >
+            <i className={`ri-refresh-line text-xs ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. Unified Shorten Input Bar */}
-      <div className="space-y-2">
+      {/* 2. Compact URL Input */}
+      <div className="space-y-1.5">
         <form
           onSubmit={handleShorten}
-          className="group relative rounded-lg border border-border/40 bg-card p-1.5 flex flex-col sm:flex-row items-center gap-2 shadow-xs hover:shadow-sm focus-within:shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200"
+          className="group relative rounded-lg border border-border/40 bg-card p-1.5 flex flex-col sm:flex-row items-center gap-2 shadow-md hover:shadow-lg focus-within:shadow-lg focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200"
         >
           <div className="flex items-center gap-2.5 w-full pl-3 pr-2">
             <i className="ri-link text-muted-foreground text-base shrink-0" />
@@ -202,92 +259,174 @@ export const DashboardView = () => {
             {submitting ? (
               <>
                 <i className="ri-loader-4-line animate-spin text-xs" />
-                <span>Creating</span>
+                <span>Creating...</span>
               </>
             ) : (
               <>
                 <i className="ri-add-line text-xs" />
-                <span>Create Link</span>
+                <span>Shorten URL</span>
               </>
             )}
           </button>
         </form>
 
         {urlError && (
-          <p className="text-xs text-error pl-3 flex items-center gap-1.5">
-            <i className="ri-error-warning-fill text-sm" />
+          <p className="text-xs text-error pl-2 flex items-center gap-1">
+            <i className="ri-error-warning-fill text-xs" />
             <span>{urlError}</span>
           </p>
         )}
       </div>
 
-      {/* 3. Links Stream / List */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs text-muted-foreground px-2">
-          <span>Active Endpoints ({links.length})</span>
-          <span>Click Count</span>
+      {/* 3. Transparent Links Table (No background, paginated with < > buttons) */}
+      <div className="space-y-3 pt-2">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead className="border-b border-border/40 text-muted-foreground font-mono uppercase text-[11px] select-none">
+              <tr>
+                <th className="py-3 px-2 font-semibold">Short Link</th>
+                <th className="py-3 px-2 font-semibold">Destination</th>
+                <th className="py-3 px-2 font-semibold text-center w-24">Clicks</th>
+                <th className="py-3 px-2 font-semibold text-right w-28">Created</th>
+                <th className="py-3 px-2 font-semibold text-right w-24">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-border/20">
+              {loading && links.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center text-muted-foreground">
+                    <i className="ri-loader-4-line text-2xl animate-spin text-primary inline-block mb-2" />
+                    <p className="text-xs font-medium">Loading links...</p>
+                  </td>
+                </tr>
+              ) : filteredLinks.length > 0 ? (
+                filteredLinks.map((link) => (
+                  <tr
+                    key={link._id || link.redirectKey}
+                    className="hover:bg-muted/20 transition-colors group"
+                  >
+                    {/* Short Link */}
+                    <td className="py-3 px-2 whitespace-nowrap">
+                      <a
+                        href={link.shortUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-sm font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <span>{link.shortUrl}</span>
+                        <i className="ri-arrow-right-up-line text-xs opacity-0 group-hover:opacity-80 transition-opacity" />
+                      </a>
+                    </td>
+
+                    {/* Destination URL */}
+                    <td className="py-3 px-2 max-w-xs sm:max-w-md truncate">
+                      <span
+                        className="font-sans text-xs text-muted-foreground truncate block"
+                        title={link.originalUrl}
+                      >
+                        {link.originalUrl}
+                      </span>
+                    </td>
+
+                    {/* Clicks */}
+                    <td className="py-3 px-2 font-mono font-semibold text-center text-foreground whitespace-nowrap">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-secondary/60 text-foreground font-mono text-[11px]">
+                        {link.clicks || 0}
+                      </span>
+                    </td>
+
+                    {/* Date */}
+                    <td className="py-3 px-2 text-muted-foreground whitespace-nowrap text-right font-sans text-xs">
+                      {new Date(link.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-3 px-2 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-1">
+                        <CopyButton text={link.shortUrl} title="Copy short link" />
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(link.redirectKey, link.shortUrl)}
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-error hover:bg-error-subtle transition-colors cursor-pointer"
+                          title="Delete link"
+                        >
+                          <i className="ri-delete-bin-line text-sm leading-none" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center">
+                    <EmptyState
+                      icon={searchTerm ? "ri-search-line" : "ri-links-line"}
+                      title={searchTerm ? "No matching links" : "No links yet"}
+                      description={
+                        searchTerm
+                          ? `No links matched "${searchTerm}".`
+                          : "Enter a destination URL above to create your first short link."
+                      }
+                      action={
+                        searchTerm ? (
+                          <button
+                            type="button"
+                            onClick={() => setSearchTerm("")}
+                            className="text-xs text-primary hover:underline cursor-pointer"
+                          >
+                            Clear search
+                          </button>
+                        ) : null
+                      }
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {loading && links.length === 0 ? (
-          <div className="py-16 text-center text-xs text-muted-foreground">
-            <i className="ri-loader-4-line text-2xl animate-spin inline-block mb-2 text-primary" />
-            <p>Fetching your links...</p>
-          </div>
-        ) : links.length > 0 ? (
-          <div className="rounded-lg border border-border bg-card shadow-xs overflow-hidden divide-y divide-border">
-            {links.map((link) => (
-              <div
-                key={link._id || link.redirectKey}
-                className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs hover:bg-muted/30 transition-colors"
+        {/* 4. Pagination Controls (< > buttons) */}
+        {totalLinks > 0 && (
+          <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Showing {offset + 1}–{Math.min(offset + links.length, totalLinks)} of{" "}
+              {totalLinks} {totalLinks === 1 ? "link" : "links"}
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={offset === 0 || loading}
+                onClick={handlePrevPage}
+                className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                title={`Previous ${PAGE_LIMIT} links`}
+                aria-label="Previous page"
               >
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={link.shortUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono font-semibold text-sm text-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
-                    >
-                      {link.shortUrl}
-                      <i className="ri-arrow-right-up-line text-xs opacity-60" />
-                    </a>
-                    <span className="text-2xs text-muted-foreground">
-                      • {new Date(link.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
+                <i className="ri-arrow-left-s-line text-lg leading-none" />
+              </button>
 
-                  <p className="text-muted-foreground truncate max-w-md text-xs font-mono">
-                    {link.originalUrl}
-                  </p>
-                </div>
+              <span className="text-xs font-mono text-muted-foreground px-1.5 select-none">
+                {currentPage} / {totalPages}
+              </span>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground font-mono text-xs font-semibold">
-                    {link.clicks || 0} {link.clicks === 1 ? "click" : "clicks"}
-                  </div>
-
-                  <CopyButton text={link.shortUrl} />
-
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(link.redirectKey, link.shortUrl)}
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-error hover:bg-error-subtle transition-colors cursor-pointer"
-                    title="Delete link"
-                    aria-label="Delete link"
-                  >
-                    <i className="ri-delete-bin-line text-sm leading-none" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-border p-12 text-center">
-            <EmptyState
-              icon="ri-links-line"
-              title="No links yet"
-              description="Paste a URL above to create your first short link and start tracking clicks."
-            />
+              <button
+                type="button"
+                disabled={!hasMore || loading}
+                onClick={handleNextPage}
+                className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                title={`Next ${PAGE_LIMIT} links`}
+                aria-label="Next page"
+              >
+                <i className="ri-arrow-right-s-line text-lg leading-none" />
+              </button>
+            </div>
           </div>
         )}
       </div>

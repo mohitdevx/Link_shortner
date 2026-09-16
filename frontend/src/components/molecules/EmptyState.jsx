@@ -7,14 +7,14 @@ export const EmptyState = ({
 }) => {
   return (
     <div
-      className={`p-8 text-center flex flex-col items-center justify-center border border-dashed border-border rounded-lg bg-card/50 ${className}`}
+      className={`py-12 px-4 text-center flex flex-col items-center justify-center bg-transparent ${className}`}
     >
-      <div className="w-10 h-10 rounded-md border border-border bg-muted flex items-center justify-center text-muted-foreground mb-3 shrink-0">
-        <i className={`${icon} text-xl leading-none`} />
+      <div className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground mb-3 shrink-0">
+        <i className={`${icon} text-lg leading-none`} />
       </div>
       <h4 className="text-sm font-semibold text-foreground">{title}</h4>
       {description && (
-        <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4 leading-relaxed">
+        <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-3 leading-relaxed">
           {description}
         </p>
       )}

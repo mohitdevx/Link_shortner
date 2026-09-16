@@ -222,7 +222,7 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard }) => {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <CopyButton text={generatedLink.shortUrl} />
+                  <CopyButton text={generatedLink.shortUrl} label="Copy" />
                   {generatedLink.isSaved ? (
                     <Button
                       variant="outline"

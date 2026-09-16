@@ -3,10 +3,11 @@ import { useToast } from "../../context/ToastContext.jsx";
 
 export const CopyButton = ({
   text,
-  label = "Copy",
+  label = null,
   copiedLabel = "Copied",
   showToast = true,
   className = "",
+  title = "Copy to clipboard",
 }) => {
   const [copied, setCopied] = useState(false);
   const toast = useToast();
@@ -27,21 +28,33 @@ export const CopyButton = ({
     }
   };
 
+  const isIconOnly = !label;
+
   return (
     <button
       type="button"
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border transition-colors cursor-pointer select-none ${
+      className={`inline-flex items-center justify-center transition-all duration-150 cursor-pointer select-none ${
+        isIconOnly
+          ? "w-7 h-7 rounded-md"
+          : "gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border/40 bg-card hover:bg-muted"
+      } ${
         copied
-          ? "bg-success-subtle text-success-subtle-foreground border-success/30"
-          : "bg-secondary text-secondary-foreground border-border hover:bg-secondary-hover"
+          ? "text-emerald-500 bg-emerald-500/15 border-emerald-500/30"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
       } ${className}`}
-      title={copied ? copiedLabel : label}
+      title={copied ? copiedLabel : title}
+      aria-label={copied ? copiedLabel : title}
     >
       <i
-        className={`${copied ? "ri-check-line text-success" : "ri-file-copy-line"} text-sm leading-none`}
+        className={`${
+          copied
+            ? "ri-check-line text-emerald-500 scale-110"
+            : "ri-clipboard-line"
+        } text-sm leading-none transition-transform duration-150`}
       />
-      <span>{copied ? copiedLabel : label}</span>
+      {label && <span>{copied ? copiedLabel : label}</span>}
     </button>
   );
 };
+
