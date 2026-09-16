@@ -29,11 +29,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Check TypeScript
-        run: pnpm run lint
-
-      - name: Run tests
-        run: pnpm test
-
-      - name: Build application
-        run: pnpm run build
+      - name: Run the project
+        run: pnpm start

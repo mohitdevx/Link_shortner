@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../atoms/Button.jsx";
 import { CopyButton } from "../molecules/CopyButton.jsx";
 import { EmptyState } from "../molecules/EmptyState.jsx";
@@ -9,7 +9,12 @@ import { useToast } from "../../context/ToastContext.jsx";
 export const DashboardView = () => {
   const { token, user } = useAuth();
   const toast = useToast();
+  const toastRef = useRef(toast);
   const confirm = useConfirm();
+
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,14 +35,14 @@ export const DashboardView = () => {
       if (res.ok && data.success) {
         setLinks(data.data || []);
       } else {
-        toast.error(data.message || "Failed to load links");
+        toastRef.current.error(data.message || "Failed to load links");
       }
     } catch {
-      toast.error("Network error fetching links");
+      toastRef.current.error("Network error fetching links");
     } finally {
       setLoading(false);
     }
-  }, [token, toast]);
+  }, [token]);
 
   useEffect(() => {
     fetchLinks();

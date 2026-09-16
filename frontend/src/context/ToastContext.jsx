@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { ToastContainer } from "../components/organisms/ToastContainer.jsx";
 
 const ToastContext = createContext(null);
@@ -42,10 +42,13 @@ export const ToastProvider = ({ children }) => {
     [showToast]
   );
 
+  const value = useMemo(
+    () => ({ showToast, removeToast, success, error, warning, info }),
+    [showToast, removeToast, success, error, warning, info]
+  );
+
   return (
-    <ToastContext.Provider
-      value={{ showToast, removeToast, success, error, warning, info }}
-    >
+    <ToastContext.Provider value={value}>
       {children}
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </ToastContext.Provider>

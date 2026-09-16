@@ -1,20 +1,5 @@
 services:
-  backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: link_shortener_backend
-    restart: unless-stopped
-    ports:
-      - "5000:5000"
-    env_file:
-      - .env
-    depends_on:
-        mongo_db:
-          condition: service_healthy
-    networks:
-      - linked_network
-  
+ 
   mongo_db:
     image: mongo:7.0
     container_name: link_shortener_mongodb
@@ -29,6 +14,8 @@ services:
       timeout: 30s
       retries: 5
       start_period: 30s
+    env_file:
+      - .env
     networks:
       - linked_network
 
