@@ -224,9 +224,3 @@ docker compose down
 - Portfolio: [portfolio.h4x.co.in](https://portfolio.h4x.co.in)
 - GitHub: [@mohitdevx](https://github.com/mohitdevx)
 - LinkedIn: [linkedin.com/in/mohitdevx](https://linkedin.com/in/mohitdevx)
-
----
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
