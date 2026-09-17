@@ -3,6 +3,7 @@ import { Button } from "../atoms/Button.jsx";
 import { CopyButton } from "../molecules/CopyButton.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
+import { getApiUrl, getShortUrl } from "../../config/api.js";
 
 export const HomePage = ({ onOpenAuth, onGoToDashboard, onInspect }) => {
   const { isAuthenticated, token } = useAuth();
@@ -23,7 +24,7 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard, onInspect }) => {
         !generatedLink.isSaved
       ) {
         try {
-          const res = await fetch("/api/v1/claim", {
+          const res = await fetch(getApiUrl("/api/v1/claim"), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -67,7 +68,7 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard, onInspect }) => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch("/api/v1/newurl", {
+      const response = await fetch(getApiUrl("/api/v1/newurl"), {
         method: "POST",
         headers,
         body: JSON.stringify({ url: inputUrl.trim() }),
@@ -75,9 +76,8 @@ export const HomePage = ({ onOpenAuth, onGoToDashboard, onInspect }) => {
 
       const data = await response.json();
       if (response.ok && data.success) {
-        const origin = window.location.origin;
         setGeneratedLink({
-          shortUrl: `${origin}/api/v1/${data.redirectKey}`,
+          shortUrl: getShortUrl(data.redirectKey),
           redirectKey: data.redirectKey,
           originalUrl: data.originalUrl || inputUrl.trim(),
           isSaved: Boolean(data.isSaved || isAuthenticated),

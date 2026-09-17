@@ -9,7 +9,7 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 # Install pnpm 
-RUN corepack enable && corepack prepare pnpm@latest --active
+RUN corepack enable && corepack prepare pnpm@10.18.2 --activate
 
 # Copy package manifests
 COPY package*.json pnpm-lock.yaml ./

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
+import { getApiUrl } from "../../config/api.js";
 
 export const ProfileView = ({ onBack }) => {
   const { user, token, updateUser } = useAuth();
@@ -55,7 +56,7 @@ export const ProfileView = ({ onBack }) => {
         payload.newPassword = newPassword;
       }
 
-      const res = await fetch("/api/me", {
+      const res = await fetch(getApiUrl("/api/me"), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

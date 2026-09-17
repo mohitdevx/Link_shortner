@@ -5,6 +5,7 @@ import { EmptyState } from "../molecules/EmptyState.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useConfirm } from "../../context/ConfirmContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
+import { getApiUrl } from "../../config/api.js";
 
 const PAGE_LIMIT = 8;
 
@@ -36,7 +37,7 @@ export const DashboardView = ({ onInspect }) => {
       try {
         setLoading(true);
         const res = await fetch(
-          `/api/profile?offset=${targetOffset}&limit=${PAGE_LIMIT}`,
+          getApiUrl(`/api/profile?offset=${targetOffset}&limit=${PAGE_LIMIT}`),
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -79,7 +80,7 @@ export const DashboardView = ({ onInspect }) => {
     const interval = setInterval(async () => {
       try {
         const res = await fetch(
-          `/api/profile?offset=${offset}&limit=${PAGE_LIMIT}`,
+          getApiUrl(`/api/profile?offset=${offset}&limit=${PAGE_LIMIT}`),
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -126,7 +127,7 @@ export const DashboardView = ({ onInspect }) => {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/v1/newurl", {
+      const res = await fetch(getApiUrl("/api/v1/newurl"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +165,7 @@ export const DashboardView = ({ onInspect }) => {
     if (!isConfirmed) return;
 
     try {
-      const res = await fetch(`/api/v1/${redirectKey}`, {
+      const res = await fetch(getApiUrl(`/api/v1/${redirectKey}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CopyButton } from "../molecules/CopyButton.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { getApiUrl } from "../../config/api.js";
 
 export const InspectLinkView = ({ redirectKey, onBack }) => {
   const { token } = useAuth();
@@ -23,7 +24,7 @@ export const InspectLinkView = ({ redirectKey, onBack }) => {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const res = await fetch(`/api/v1/inspect/${redirectKey}`, { headers });
+      const res = await fetch(getApiUrl(`/api/v1/inspect/${redirectKey}`), { headers });
       const json = await res.json();
 
       if (res.ok && json.success) {
@@ -48,7 +49,7 @@ export const InspectLinkView = ({ redirectKey, onBack }) => {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/v1/clicks/${redirectKey}`);
+        const res = await fetch(getApiUrl(`/api/v1/clicks/${redirectKey}`));
         const json = await res.json();
         if (res.ok && json.success && json.data) {
           setData((prev) => {
@@ -68,7 +69,7 @@ export const InspectLinkView = ({ redirectKey, onBack }) => {
     if (!redirectKey || refreshingClicks) return;
     setRefreshingClicks(true);
     try {
-      const res = await fetch(`/api/v1/clicks/${redirectKey}`);
+      const res = await fetch(getApiUrl(`/api/v1/clicks/${redirectKey}`));
       const json = await res.json();
       if (res.ok && json.success && json.data) {
         setData((prev) =>
